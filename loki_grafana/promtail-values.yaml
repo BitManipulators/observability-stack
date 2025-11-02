@@ -6,7 +6,7 @@ config:
 
     extraRelabelConfigs:
       - source_labels: ['__meta_kubernetes_namespace']
-        regex: 'kube-system|grafana|kube-node-lease|kube-public|loki'
+        regex: 'grafana|kube-node-lease|kube-public'
         action: drop
 
     pipelineStages:
