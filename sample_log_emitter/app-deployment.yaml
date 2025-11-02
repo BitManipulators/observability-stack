@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-logger
+  namespace: my-python-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sample-logger
+  template:
+    metadata:
+      labels:
+        app: sample-logger
+    spec:
+      containers:
+      - name: app
+        image: sample-logger:v1
+        # IMPORTANT: Use IfNotPresent so K8s uses our local image
+        imagePullPolicy: IfNotPresent
+        env:
+        # Set the log level. Change to "DEBUG" to see more!
+        - name: "LOG_LEVEL"
+          value: "INFO"
