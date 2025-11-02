@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-app-deployment
+  namespace: monitoring # We'll put it in the monitoring namespace
+  labels:
+    app: simple-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simple-app
+  template:
+    metadata:
+      labels:
+        app: simple-app # This label is critical for the Service
+    spec:
+      containers:
+      - name: simple-app
+        # This is the image we are about to build
+        image: simple-app:latest
+        # This is CRITICAL. It tells K8s "Do not try to pull from the internet.
+        # Use the local image if it exists."
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: web
+          containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simple-app-service
+  namespace: monitoring
+  labels:
+    app: simple-app # This label is critical for the ServiceMonitor
+spec:
+  selector:
+    app: simple-app # Selects the pods from our Deployment
+  ports:
+    # We name the port 'web' for the ServiceMonitor to find
+    - name: web
+      port: 5000
+      targetPort: 5000
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: simple-app-servicemonitor
+  namespace: monitoring
+  labels:
+    release: prometheus # This label tells the Prometheus Operator to use this
+spec:
+  selector:
+    matchLabels:
+      app: simple-app # Selects the Service we just defined
+  endpoints:
+  - port: web # This matches the 'name' of the port in the Service
+    path: /metrics # The path to scrape for metrics
+    interval: 10s # Scrape every 10 seconds
