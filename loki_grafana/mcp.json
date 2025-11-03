@@ -1,0 +1,23 @@
+{
+    "mcpServers": {
+      "grafana": {
+        "command": "docker",
+        "args": [
+          "run",
+          "--rm",
+          "-i",
+          "-e",
+          "GRAFANA_URL",
+          "-e",
+          "GRAFANA_API_KEY",
+          "mcp/grafana",
+          "-t",
+          "stdio"
+        ],
+        "env": {
+          "GRAFANA_URL": "http://host.docker.internal:3000",
+          "GRAFANA_API_KEY": "Add your Grafana API key here"
+        }
+      }
+    }
+  }
