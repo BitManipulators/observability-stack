@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-grafana
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-grafana
+  template:
+    metadata:
+      labels:
+        app: mcp-grafana
+    spec:
+      containers:
+      - name: mcp-grafana
+        image: mcp/grafana:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: GRAFANA_URL
+          value: "http://grafana.grafana.svc.cluster.local:3000"
+        - name: GRAFANA_SERVICE_ACCOUNT_TOKEN
+          value: "<your-service-account-token>"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-grafana
+  namespace: default
+spec:
+  type: NodePort
+  ports:
+  - port: 8000
+    targetPort: 8000
+    nodePort: 30080
+  selector:
+    app: mcp-grafana
+
