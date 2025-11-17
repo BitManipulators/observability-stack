@@ -1,0 +1,26 @@
+---
+# This ClusterRole gives the 'list' and 'watch' permissions
+# that the operator is complaining about in the logs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: jaeger-operator-ingress-fix
+rules:
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingressclasses"]
+  verbs: ["get", "list", "watch"]
+---
+# This ClusterRoleBinding gives the new 'jaeger-operator-ingress-fix' role
+# to the 'jaeger-operator' ServiceAccount inside the 'jaeger' namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jaeger-operator-ingress-fix-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: jaeger-operator-ingress-fix
+subjects:
+- kind: ServiceAccount
+  name: jaeger-operator
+  namespace: jaeger
