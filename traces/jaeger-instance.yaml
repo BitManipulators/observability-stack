@@ -1,0 +1,8 @@
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: jaeger-all-in-one
+  # Use the 'jaeger' namespace you chose
+  namespace: jaeger
+spec:
+  strategy: allInOne
