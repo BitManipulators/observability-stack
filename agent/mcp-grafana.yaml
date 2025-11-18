@@ -20,7 +20,7 @@ spec:
         - containerPort: 8000
         env:
         - name: GRAFANA_URL
-          value: "http://grafana.grafana.svc.cluster.local:3000"
+          value: "http://grafana.grafana.svc.cluster.local:80"
         - name: GRAFANA_SERVICE_ACCOUNT_TOKEN
           value: "glsa_i3n5oXjsSRDsmKRLqG7JrCmJ5dR80eid_8b145a64"
 ---
