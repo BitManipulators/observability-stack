@@ -41,26 +41,31 @@ print("Connecting to MCP server via SSE...")
 with sse_mcp_client:
     # 3. Fetch the tools from the server
     tools = sse_mcp_client.list_tools_sync()
+    print(tools)
     
-    # for tool in tools :
-    #     print(tool.tool_name)
-    #     print(tool.tool_spec)
+    agent_tools = []
+    for tool in tools :
+         if tool.tool_name == '':
+            agent_tools.append()
+        
+         #print(tool.tool_name)
+         #print(tool.tool_spec)
 
     # print(f"Fetched {len(tools)} tools.")
     
     # 4. Create an agent with these tools
-    agent = Agent(
-            name="SREAgent",
-            system_prompt="""You are an SRE assistant 
-            that queries Grafana for logs and metrics. 
-            Fetch errors using  `query_loki_logs` tool this is the query `{app="sample-logger", namespace="my-python-app", level="ERROR"}`
-            """,
-            model=gemini_model,
-            tools=tools,
-    )
+    # agent = Agent(
+    #         name="SREAgent",
+    #         system_prompt="""You are an SRE assistant 
+    #         that queries Grafana for logs and metrics. 
+    #         Fetch errors using  `query_loki_logs` tool this is the query `{app="sample-logger", namespace="my-python-app", level="ERROR"}`
+    #         """,
+    #         model=gemini_model,
+    #         tools=tools,
+    # )
     
-    # 5. Use the agent
-    response = agent("What tools do you have?")
-    print(response)
+    # # 5. Use the agent
+    # response = agent("What tools do you have?")
+    # print(response)
 
 print("Connection closed.")

@@ -108,27 +108,50 @@ async def main():
     log_agent = create_agent(
         llm_worker, 
         log_tools, 
-        """
-        You are a Site Reliability Engineer (SRE).
-        You have access to a tool called `query_loki_logs`.
-        construct logql based on service name and status
-        Example 
-        If query is - `Check logs for 'sample-logger' and tell me if there are errorrs`
         
-        LOGQL_EXAMPLE
-        `logql:  {service_name="sample-logger", level="ERROR"} `
-
-       
+        """
+        You are a Site Reliability Engineer (SRE) specializing in Log Analysis.
+        You have access to a tool called `query_loki_logs` which executes LogQL queries.
+         
+        USE_PAYLOAD_TEMPLATE
+        {
+        "datasourceUid": "ef3dizthbw4xsf",
+        "logql": "{service_name=\"sample-logger\", level=\"ERROR\"} ",
+        "limit": 5
+        
+        }
+        
         CRITICAL INSTRUCTION:
         When using `query_loki_logs`, you MUST set the `datasourceUid` argument to "ef3dizthbw4xsf".
         DO NOT guess the UID. Always use this exact string.
+        
+        When using `query_loki_logs`:
+        - Always define the `logql` argument.
+        - Use `limit=5` to avoid overwhelming the context window unless asked for more.
+       
         """
     )
     
     metric_agent = create_agent(
         llm_worker, 
         metrics_tools, 
-        "You are a DevOps Engineer. Use `query_prometheus`. Check rates and usage."
+        """You are a DevOps Engineer. Use `query_prometheus` to find node_memory usage
+        
+        CRITICAL INSTRUCTION:
+        When using `query_prometheus`, you MUST set the `datasourceUid` argument to "df3dkkjd3cfeod".
+        DO NOT guess the UID. Always use this exact string.
+        You don't have use service name here. This is kubernetes nodememory usage
+
+        USE_PAYLOAD_TEMPLATE
+        {
+            "datasourceUid": "df3dkkjd3cfeod",
+            "queryType": "instant",
+            "expr": 'kube_node_status_condition{condition="Ready", status="true"} == 1',
+            "startTime": "now",
+            "endTime": "now"
+        }
+        
+        """
     )
 
     # C. Build Graph
@@ -150,7 +173,7 @@ async def main():
 
     # D. Run (Async Stream)
     print("\n--- Starting Async SDE Agent System ---")
-    user_input = "Check logs for 'sample-logger' and tell me if there are errors."
+    user_input = "what is the reason for error in service 'sample-logger' using logs and find metrics of the kubernetes node"
     inputs = {"messages": [HumanMessage(content=user_input)]}
 
     async for output in app.astream(inputs):
