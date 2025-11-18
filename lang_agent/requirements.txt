@@ -1,0 +1,5 @@
+langgraph 
+langchain 
+langchain-google-genai 
+pydantic
+langchain_mcp_adapters
