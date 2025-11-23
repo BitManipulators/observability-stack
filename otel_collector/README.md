@@ -16,7 +16,7 @@ The collector was installed into the `default` namespace using the following Hel
 
 ```bash
 # Add the Helm repository
-helm repo add open-telemetry [https://open-telemetry.github.io/opentelemetry-helm-charts](https://open-telemetry.github.io/opentelemetry-helm-charts)
+helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
 helm repo update
 
 # Install/Upgrade the collector
