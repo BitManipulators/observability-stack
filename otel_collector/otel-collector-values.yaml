@@ -25,6 +25,15 @@ config:
   processors:
     batch: {}
     
+    # --- Resource Processor: Tell Loki which attributes become labels ---
+    resource:
+      attributes:
+        # This special attribute tells the Loki exporter which resource attributes to use as labels
+        # Comma-separated list of resource attribute names
+        - action: insert
+          key: loki.resource.labels
+          value: service.name, k8s.namespace.name, k8s.pod.name, k8s.node.name, k8s.deployment.name
+    
     # --- K8s Attributes Processor ---
     # Enriches telemetry with Kubernetes metadata by querying the K8s API
     k8sattributes:
@@ -73,6 +82,7 @@ config:
       endpoint: "http://loki-gateway.loki.svc.cluster.local:80/loki/api/v1/push"
       tls:
         insecure: true
+      # Labels are now configured via "loki.resource.labels" hint in processors
     
     # --- Exporter for TRACES to JAEGER ---
     otlp/jaeger:
@@ -106,5 +116,5 @@ config:
       # --- LOGS Pipeline ---
       logs:
         receivers: [otlp]
-        processors: [k8sattributes, batch]  # k8sattributes BEFORE batch
+        processors: [k8sattributes, resource, batch]  # k8sattributes → resource → batch
         exporters: [loki, debug]
