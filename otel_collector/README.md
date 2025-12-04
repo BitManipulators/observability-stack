@@ -10,104 +10,30 @@ The collector is configured to receive OTLP data (traces and logs) from the demo
 
 The OTel Collector is the central "plumbing" service. It was installed via Helm and required significant troubleshooting to configure correctly.
 
-### Final Installation Command
+### 2: Apply the RBAC Configuration
+```bash
+cd /home/suriya/repo/obs-stack/observability-stack/otel_collector
+kubectl apply -f otel-collector-rbac.yaml
+```
+
+###  Installation Command
 
 The collector was installed into the `default` namespace using the following Helm command, which references the `otel-collector-values.yaml` file:
 
 ```bash
 # Add the Helm repository
-helm repo add open-telemetry [https://open-telemetry.github.io/opentelemetry-helm-charts](https://open-telemetry.github.io/opentelemetry-helm-charts)
+helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
 helm repo update
 
 # Install/Upgrade the collector
 helm upgrade --install otel-collector open-telemetry/opentelemetry-collector \
 --namespace default \
 -f otel-collector-values.yaml
-````
-
-### Final Collector Configuration (`otel-collector-values.yaml`)
-
-This is the final, working configuration file. It solves all debugged issues.
-
-```yaml
-# Use the 'contrib' image to get all exporters
-image:
-  repository: otel/opentelemetry-collector-contrib
-  tag: 0.103.0
-
-# Use 'deployment' mode to create a stable ClusterIP service
-mode: deployment
-
-config:
-  receivers:
-    otlp:
-      protocols:
-        grpc:
-          endpoint: 0.0.0.0:4317
-        http:
-          endpoint: 0.0.0.0:4318
-
-  processors:
-    batch: {}
-
-  exporters:
-    # --- Exporter for LOGS to LOKI ---
-    loki:
-      # Endpoint for the loki-gateway in the 'loki' namespace
-      endpoint: "http://loki-gateway.loki.svc.cluster.local:80/loki/api/v1/push"
-      tls:
-        insecure: true
-    
-    # --- Exporter for TRACES to JAEGER ---
-    otlp/jaeger:
-      # Endpoint for the jaeger-collector in the 'jaeger' namespace
-      endpoint: "jaeger-all-in-one-collector.jaeger.svc.cluster.local:4317"
-      tls:
-        insecure: true
-
-    # --- Use 'debug' exporter for troubleshooting ---
-    debug:
-      verbosity: detailed
-
-  service:
-    telemetry:
-      metrics:
-        address: 0.0.0.0:8889 # Fixes port conflict
-
-    pipelines:
-      traces:
-        receivers: [otlp]
-        processors: [batch]
-        exporters: [otlp/jaeger, debug] # Send to Jaeger AND console
-      logs:
-        receivers: [otlp]
-        processors: [batch]
-        exporters: [loki, debug] # Send to Loki AND console
 ```
 
 ### Collector Service (`otel-service.yaml`)
 
-A key troubleshooting step was discovering the Helm chart in `deployment` mode *still* didn't create the service correctly. We created it manually.
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: otel-collector-opentelemetry-collector
-  namespace: default
-spec:
-  # This selector matches the labels on the collector pod
-  selector:
-    app.kubernetes.io/name: opentelemetry-collector
-    app.kubernetes.io/instance: otel-collector
-  ports:
-    - name: otlp-grpc
-      port: 4317
-      targetPort: 4317
-    - name: otlp-http
-      port: 4318
-      targetPort: 4318
-```
+- A key troubleshooting step was discovering the Helm chart in `deployment` mode *still* didn't create the service correctly. We created it manually.
 
 ### OTel Collector Troubleshooting Log
 

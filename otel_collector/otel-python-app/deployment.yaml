@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-log-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: python-log-app
+  template:
+    metadata:
+      labels:
+        app: python-log-app
+    spec:
+      containers:
+      - name: python-app
+        image: python-log-app:latest # We will build this locally
+        imagePullPolicy: Never       # IMPORTANT: Forces K8s to use the local Minikube image
+        ports:
+        - containerPort: 8080
+        env:
+        # Tells the Python app where the Collector is
+        # Format: <service-name>.<namespace>.svc.cluster.local:<port>
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://otel-collector-opentelemetry-collector.default.svc.cluster.local:4317"
+        - name: OTEL_EXPORTER_OTLP_INSECURE
+          value: "true"
+        # Note: K8s metadata is now added by the OTel Collector's k8sattributes processor
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-log-app
+spec:
+  # (Change) Exposes the service on a static port on the node
+  type: NodePort 
+  selector:
+    app: python-log-app
+  ports:
+    - protocol: TCP
+      port: 8080        # The port inside the cluster
+      targetPort: 8080  # The container port
+      nodePort: 30001   # (Optional) Fixed external port for easy access

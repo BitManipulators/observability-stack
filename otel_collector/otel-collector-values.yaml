@@ -3,8 +3,13 @@ image:
   repository: otel/opentelemetry-collector-contrib
   tag: 0.103.0
 
-# Deploy as a DaemonSet on each node
+# Deploy as a Deployment (not DaemonSet)
 mode: deployment
+
+# --- Use our custom ServiceAccount with K8s API permissions ---
+serviceAccount:
+  create: false  # We created it manually via otel-collector-rbac.yaml
+  name: otel-collector-sa
 
 config:
   # 1. RECEIVERS
@@ -19,17 +24,55 @@ config:
   # 2. PROCESSORS
   processors:
     batch: {}
+    
+    # --- K8s Attributes Processor ---
+    # Enriches telemetry with Kubernetes metadata by querying the K8s API
+    k8sattributes:
+      auth_type: "serviceAccount"
+      passthrough: false  # Process telemetry, don't just pass through
+      
+      # Filter to only process pods in same namespace (optional, for performance)
+      filter:
+        node_from_env_var: K8S_NODE_NAME  # Only watch pods on same node
+      
+      # What metadata to extract
+      extract:
+        metadata:
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.namespace.name
+          - k8s.node.name
+          - k8s.deployment.name
+          - k8s.pod.start_time
+        # Extract labels from the pod
+        labels:
+          - tag_name: app.label
+            key: app
+            from: pod
+        # Extract annotations (optional)
+        annotations:
+          - tag_name: app.annotation.version
+            key: version
+            from: pod
+      
+      # How to associate telemetry with pods
+      pod_association:
+        - sources:
+            - from: resource_attribute
+              name: k8s.pod.ip
+        - sources:
+            - from: resource_attribute
+              name: k8s.pod.uid
+        - sources:
+            - from: connection
 
   # 3. EXPORTERS
   exporters:
     # --- Exporter for LOGS to LOKI ---
     loki:
-      # NOTE: This is your Loki endpoint. Verify it's correct.
       endpoint: "http://loki-gateway.loki.svc.cluster.local:80/loki/api/v1/push"
       tls:
         insecure: true
-      # --- (FIX) The invalid 'attributes' block has been removed ---
-      # The collector will forward the trace_id by default.
     
     # --- Exporter for TRACES to JAEGER ---
     otlp/jaeger:
@@ -51,17 +94,17 @@ config:
       # --- TRACES Pipeline ---
       traces:
         receivers: [otlp]
-        processors: [batch]
+        processors: [k8sattributes, batch]  # k8sattributes BEFORE batch
         exporters: [otlp/jaeger, debug]
 
       # --- METRICS Pipeline (if you use it) ---
       metrics:
         receivers: [otlp]
-        processors: [batch]
+        processors: [k8sattributes, batch]
         exporters: [debug]
 
       # --- LOGS Pipeline ---
       logs:
         receivers: [otlp]
-        processors: [batch]
+        processors: [k8sattributes, batch]  # k8sattributes BEFORE batch
         exporters: [loki, debug]
